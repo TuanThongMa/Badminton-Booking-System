@@ -120,8 +120,8 @@ public class BookingController {
     }
 
     @DeleteMapping("/bookings/{id}")
-    public ResponseEntity<?> cancelBooking(@PathVariable Long id) {
-        Booking booking = bookingService.cancelBooking(id);
+    public ResponseEntity<?> cancelBooking(@PathVariable Long id, Authentication authentication) {
+        Booking booking = bookingService.cancelBooking(id, authentication);
         return ResponseEntity.ok(java.util.Map.of(
                 "id", booking.getId(),
                 "status", booking.getStatus().name()
