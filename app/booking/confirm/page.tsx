@@ -102,7 +102,6 @@ export default function BookingConfirmPage() {
     setError(null)
 
     try {
-      const bookingIds: number[] = []
       const storedUser = localStorage.getItem('user')
       let userId: number | null = null
       if (storedUser) {
@@ -113,26 +112,22 @@ export default function BookingConfirmPage() {
         }
       }
 
-      // Create one booking per court
-      for (const courtId of draft.courtIds) {
-        const result = await backendJson<{ id: number; status: string }>('/bookings', {
-          method: 'POST',
-          body: JSON.stringify({
-            courtId,
-            date: draft.date,
-            startTime: `${String(slot.start).padStart(2, '0')}:00`,
-            endTime: `${String(slot.end).padStart(2, '0')}:00`,
-            userName: nameTrimmed,
-            userPhone: phoneClean,
-            userId,
-            notes: formData.notes || null,
-          }),
-        })
-        bookingIds.push(result.id)
-      }
+      const result = await backendJson<{ ids: number[]; status: string }>('/bookings/batch', {
+        method: 'POST',
+        body: JSON.stringify({
+          courtIds: draft.courtIds,
+          date: draft.date,
+          startTime: `${String(slot.start).padStart(2, '0')}:00`,
+          endTime: `${String(slot.end).padStart(2, '0')}:00`,
+          userName: nameTrimmed,
+          userPhone: phoneClean,
+          userId,
+          notes: formData.notes || null,
+        }),
+      })
 
       saveBookingResult({
-        bookingIds,
+        bookingIds: result.ids,
         courtIds: draft.courtIds,
         date: draft.date,
         timeSlotIndex: draft.timeSlotIndex,
