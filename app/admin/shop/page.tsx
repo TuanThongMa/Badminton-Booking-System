@@ -78,10 +78,10 @@ export default function AdminShopPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
-    loadData()
+    loadData(true)
   }, [])
 
-  const loadData = async () => {
+  const loadData = async (openRequestedForm = false) => {
     setLoading(true)
     setError(null)
     try {
@@ -91,6 +91,20 @@ export default function AdminShopPage() {
       ])
       setProducts(prodsData)
       setCategories(catsData)
+      if (openRequestedForm) {
+        const params = new URLSearchParams(window.location.search)
+        const editId = params.get('edit')
+        if (editId !== null) {
+          const product = prodsData.find((p) => String(p.id) === editId)
+          if (product) {
+            openEditProductModal(product)
+          } else {
+            setError('Không tìm thấy sản phẩm cần chỉnh sửa')
+          }
+        } else if (params.get('create') === 'true') {
+          openNewProductModal(catsData[0]?.id || 0)
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không thể tải dữ liệu cửa hàng')
     } finally {
@@ -157,7 +171,7 @@ export default function AdminShopPage() {
   }
 
   // --- Product Handlers ---
-  const openNewProductModal = () => {
+  const openNewProductModal = (categoryId = categories[0]?.id || 0) => {
     setEditingProduct(null)
     setProdForm({
       name: '',
@@ -167,7 +181,7 @@ export default function AdminShopPage() {
       image: '🏸',
       stock: 10,
       description: '',
-      categoryId: categories[0]?.id || 0,
+      categoryId,
     })
     setProdError(null)
     setIsProductModalOpen(true)
@@ -316,14 +330,14 @@ export default function AdminShopPage() {
               </button>
               <button
                 type="button"
-                onClick={openNewProductModal}
+                onClick={() => openNewProductModal()}
                 className="flex items-center justify-center gap-2 rounded-lg bg-accent text-white px-4 py-2 text-sm font-medium transition-colors hover:bg-accent/90 cursor-pointer"
               >
                 <Plus size={16} /> Thêm sản phẩm
               </button>
               <button
                 type="button"
-                onClick={loadData}
+                onClick={() => loadData()}
                 className="flex items-center justify-center h-9 w-9 rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-muted cursor-pointer"
                 title="Làm mới"
               >
