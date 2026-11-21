@@ -7,6 +7,8 @@ import com.example.booking.repository.BookingRepository;
 import com.example.booking.repository.CourtRepository;
 import com.example.booking.repository.UserRepository;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -106,8 +108,18 @@ public class BookingService {
     }
 
     @Transactional
-    public Booking cancelBooking(Long bookingId) {
+    public Booking cancelBooking(Long bookingId, Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()
+                || new AuthenticationTrustResolverImpl().isAnonymous(authentication)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
+        }
         Booking booking = getBooking(bookingId);
+        boolean admin = authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+        if (!admin && (booking.getUser() == null
+                || !authentication.getName().equals(booking.getUser().getUsername()))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Booking belongs to another user");
+        }
         if (booking.getStatus() == BookingStatus.CANCELLED) {
             return booking;
         }
