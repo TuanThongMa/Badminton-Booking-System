@@ -73,6 +73,10 @@ class BookingBatchIntegrationTest {
         post("/api/bookings", single(b.getId()), 201);
         JsonNode error = post("/api/bookings/batch", batch(), 409);
         assertThat(error.get("message").asText()).contains(b.getName());
+        assertThat(error.get("status").asInt()).isEqualTo(409);
+        assertThat(error.get("error").asText()).isEqualTo("Conflict");
+        assertThat(error.get("path").asText()).isEqualTo("/api/bookings/batch");
+        assertThat(error.hasNonNull("timestamp")).isTrue();
         assertThat(bookings.existsOverlappingBooking(a.getId(), date, LocalTime.of(9, 0), LocalTime.of(11, 0)))
                 .as("court A must not remain booked after court B conflicts").isFalse();
         assertThat(bookings.findExact(b.getId(), date, LocalTime.of(9, 0))).hasSize(1);
@@ -127,5 +131,12 @@ class BookingBatchIntegrationTest {
             post("/api/bookings/batch", body, 400);
         }
         assertThat(bookings.findExact(a.getId(), date, LocalTime.of(9, 0))).isEmpty();
+    }
+
+    @Test
+    void unexpectedErrorsDoNotExposeExceptionMessages() {
+        JsonNode error = post("/api/bookings/batch", batch().replace(date.toString(), "invalid"), 500);
+        assertThat(error.has("message")).isFalse();
+        assertThat(error.has("trace")).isFalse();
     }
 }
