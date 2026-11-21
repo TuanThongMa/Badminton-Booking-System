@@ -6,6 +6,8 @@ import com.example.booking.model.Court;
 import com.example.booking.repository.BookingRepository;
 import com.example.booking.repository.CourtRepository;
 import com.example.booking.repository.UserRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +27,9 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final CourtRepository courtRepository;
     private final UserRepository userRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public BookingService(BookingRepository bookingRepository, CourtRepository courtRepository, UserRepository userRepository) {
         this.bookingRepository = bookingRepository;
@@ -91,11 +96,14 @@ public class BookingService {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found: " + userId)));
         }
 
+        Booking saved;
         try {
-            return bookingRepository.saveAndFlush(b);
+            saved = bookingRepository.saveAndFlush(b);
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Selected slot is already booked");
         }
+        entityManager.refresh(saved);
+        return saved;
     }
 
     @Transactional(readOnly = true)

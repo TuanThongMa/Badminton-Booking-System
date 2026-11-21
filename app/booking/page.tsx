@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation'
 import Navbar from '@/components/navbar'
 import Footer from '@/components/footer'
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
-import { TIME_SLOTS, getDayType, getTimeRange } from '@/lib/booking-pricing'
+import { TIME_SLOTS, getCourtPriceValue, getDayType, getTimeRange } from '@/lib/booking-pricing'
 import { saveBookingDraft } from '@/lib/booking-storage'
 import { backendJson } from '@/lib/backend-api'
-import { type CourtPrice, fetchCourtPrices, getCourtPriceValue } from '@/lib/court-prices'
+import { type CourtPrice, fetchCourtPrices } from '@/lib/court-prices'
 
 const COURTS = Array.from({ length: 10 }, (_, i) => ({ id: i + 1, name: `Sân ${i + 1}` }))
 

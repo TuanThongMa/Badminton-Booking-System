@@ -4,9 +4,9 @@ import { useEffect, useMemo, useState } from 'react'
 import Navbar from '@/components/navbar'
 import Footer from '@/components/footer'
 import { Loader2, RefreshCw, Save } from 'lucide-react'
-import { TIME_SLOTS, getTimeRange } from '@/lib/booking-pricing'
+import { TIME_SLOTS, getTimeRange, normalizeTime } from '@/lib/booking-pricing'
 import { backendJson } from '@/lib/backend-api'
-import { type CourtPrice, type CourtPriceDayType, fetchCourtPrices, normalizeTime } from '@/lib/court-prices'
+import { type CourtPrice, type CourtPriceDayType, fetchCourtPrices } from '@/lib/court-prices'
 
 const DAY_TYPES: Array<{ key: CourtPriceDayType; label: string }> = [
   { key: 'WEEKDAY', label: 'Ngay thuong' },
