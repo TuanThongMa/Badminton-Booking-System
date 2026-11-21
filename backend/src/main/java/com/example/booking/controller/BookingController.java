@@ -6,6 +6,7 @@ import com.example.booking.repository.UserRepository;
 import com.example.booking.service.BookingService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
@@ -59,7 +60,6 @@ public class BookingController {
         public String endTime;
         public String userName;
         public String userPhone;
-        public Long userId;
         public String notes;
     }
 
@@ -73,21 +73,22 @@ public class BookingController {
         LocalTime st = LocalTime.parse(req.startTime);
         LocalTime et = LocalTime.parse(req.endTime);
 
-        Long userId = req.userId;
-        if (authentication != null && authentication.isAuthenticated()
-                && !"anonymousUser".equals(authentication.getName())) {
-            String username = authentication.getName();
-            Optional<User> userOpt = userRepository.findByUsername(username);
-            if (userOpt.isPresent()) {
-                userId = userOpt.get().getId();
-            }
-        }
-
-        Booking b = bookingService.createBooking(req.courtId, d, st, et, req.userName, req.userPhone, req.notes, userId);
+        Booking b = bookingService.createBooking(req.courtId, d, st, et, req.userName, req.userPhone, req.notes,
+                resolveBookingUserId(authentication));
         return ResponseEntity.status(HttpStatus.CREATED).body(java.util.Map.of(
                 "id", b.getId(),
                 "status", b.getStatus().name()
         ));
+    }
+
+    private Long resolveBookingUserId(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            return null;
+        }
+        return userRepository.findByUsername(authentication.getName())
+                .map(User::getId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
     }
 
     @GetMapping("/bookings/{id}")
