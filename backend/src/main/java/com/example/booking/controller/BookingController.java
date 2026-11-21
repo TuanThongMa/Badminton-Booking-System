@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -63,6 +64,23 @@ public class BookingController {
         public String notes;
     }
 
+    public static class BatchBookingRequest extends BookingRequest {
+        public List<Long> courtIds;
+    }
+
+    @PostMapping("/bookings/batch")
+    public ResponseEntity<?> bookBatch(@RequestBody BatchBookingRequest req, Authentication authentication) {
+        if (req == null || req.date == null || req.startTime == null || req.endTime == null
+                || req.userName == null || req.userName.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "courtIds, date, startTime, endTime and userName are required");
+        }
+        List<Booking> bookings = bookingService.createBookings(req.courtIds, LocalDate.parse(req.date),
+                LocalTime.parse(req.startTime), LocalTime.parse(req.endTime), req.userName, req.userPhone,
+                req.notes, resolveUserId(req.userId, authentication));
+        return ResponseEntity.status(HttpStatus.CREATED).body(java.util.Map.of(
+                "ids", bookings.stream().map(Booking::getId).toList(), "status", "CONFIRMED"));
+    }
+
     @PostMapping("/bookings")
     public ResponseEntity<?> book(@RequestBody BookingRequest req, Authentication authentication) {
         if (req == null || req.courtId == null || req.date == null || req.startTime == null || req.endTime == null || req.userName == null || req.userName.isBlank()) {
@@ -73,7 +91,16 @@ public class BookingController {
         LocalTime st = LocalTime.parse(req.startTime);
         LocalTime et = LocalTime.parse(req.endTime);
 
-        Long userId = req.userId;
+        Long userId = resolveUserId(req.userId, authentication);
+
+        Booking b = bookingService.createBooking(req.courtId, d, st, et, req.userName, req.userPhone, req.notes, userId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(java.util.Map.of(
+                "id", b.getId(),
+                "status", b.getStatus().name()
+        ));
+    }
+
+    private Long resolveUserId(Long userId, Authentication authentication) {
         if (authentication != null && authentication.isAuthenticated()
                 && !"anonymousUser".equals(authentication.getName())) {
             String username = authentication.getName();
@@ -83,11 +110,7 @@ public class BookingController {
             }
         }
 
-        Booking b = bookingService.createBooking(req.courtId, d, st, et, req.userName, req.userPhone, req.notes, userId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(java.util.Map.of(
-                "id", b.getId(),
-                "status", b.getStatus().name()
-        ));
+        return userId;
     }
 
     @GetMapping("/bookings/{id}")

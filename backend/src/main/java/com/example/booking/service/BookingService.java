@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -68,13 +69,30 @@ public class BookingService {
     @Transactional
     public Booking createBooking(Long courtId, LocalDate date, LocalTime startTime, LocalTime endTime, String userName,
             String userPhone, String notes, Long userId) {
+        return createBookingForCourt(courtId, date, startTime, endTime, userName, userPhone, notes, userId);
+    }
+
+    @Transactional
+    public List<Booking> createBookings(List<Long> courtIds, LocalDate date, LocalTime startTime, LocalTime endTime,
+            String userName, String userPhone, String notes, Long userId) {
+        if (courtIds == null || courtIds.isEmpty() || courtIds.stream().anyMatch(id -> id == null)
+                || new HashSet<>(courtIds).size() != courtIds.size()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "courtIds must be non-empty, non-null and unique");
+        }
+        return courtIds.stream()
+                .map(courtId -> createBookingForCourt(courtId, date, startTime, endTime, userName, userPhone, notes, userId))
+                .toList();
+    }
+
+    private Booking createBookingForCourt(Long courtId, LocalDate date, LocalTime startTime, LocalTime endTime,
+            String userName, String userPhone, String notes, Long userId) {
         validateBookingWindow(date, startTime, endTime);
 
         Court court = courtRepository.findById(courtId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Court not found: " + courtId));
 
         if (!isAvailable(courtId, date, startTime, endTime)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Selected slot is not available");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Selected slot is not available for " + courtLabel(court));
         }
 
         Booking b = new Booking();
@@ -94,8 +112,12 @@ public class BookingService {
         try {
             return bookingRepository.saveAndFlush(b);
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Selected slot is already booked");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Selected slot is already booked for " + courtLabel(court));
         }
+    }
+
+    private String courtLabel(Court court) {
+        return court.getName() == null || court.getName().isBlank() ? "court " + court.getId() : court.getName();
     }
 
     @Transactional(readOnly = true)
