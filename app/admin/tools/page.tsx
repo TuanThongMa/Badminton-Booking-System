@@ -25,7 +25,7 @@ export default function AdminToolsPage() {
         <div className="mx-auto max-w-5xl">
           <div className="mb-6 flex items-center justify-between">
             <h1 className="text-2xl font-bold">Quản trị dụng cụ</h1>
-            <Link href="/admin/tools/create" className="rounded bg-accent text-white px-4 py-2">Tạo dụng cụ</Link>
+            <Link href="/admin/shop?create=true" className="rounded bg-accent text-white px-4 py-2">Tạo dụng cụ</Link>
           </div>
 
           <div className="space-y-3">
@@ -37,7 +37,7 @@ export default function AdminToolsPage() {
                 </div>
                 <div className="text-right">
                   <div className="font-medium">{formatPrice(p.price)}</div>
-                  <Link href={`/admin/tools/${p.id}/edit`} className="text-sm text-accent mt-2 block">Sửa</Link>
+                  <Link href={`/admin/shop?edit=${p.id}`} className="text-sm text-accent mt-2 block">Sửa</Link>
                 </div>
               </div>
             ))}
