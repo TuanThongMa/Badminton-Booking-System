@@ -201,7 +201,7 @@ export default function Navbar() {
               </Link>
 
               <Link
-                href="#contact"
+                href="/contact"
                 className="text-sm transition-colors hover:text-accent"
               >
                 Liên hệ
