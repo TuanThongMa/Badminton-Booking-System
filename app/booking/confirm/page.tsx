@@ -103,15 +103,6 @@ export default function BookingConfirmPage() {
 
     try {
       const bookingIds: number[] = []
-      const storedUser = localStorage.getItem('user')
-      let userId: number | null = null
-      if (storedUser) {
-        try {
-          userId = JSON.parse(storedUser)?.id ?? null
-        } catch {
-          localStorage.removeItem('user')
-        }
-      }
 
       // Create one booking per court
       for (const courtId of draft.courtIds) {
@@ -124,7 +115,6 @@ export default function BookingConfirmPage() {
             endTime: `${String(slot.end).padStart(2, '0')}:00`,
             userName: nameTrimmed,
             userPhone: phoneClean,
-            userId,
             notes: formData.notes || null,
           }),
         })
