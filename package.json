@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "test": "node --test lib/*.test.ts",
     "check:db": "node scripts/check-db.mjs",
     "check:ui": "node scripts/check-ui.mjs",
     "check:env": "node scripts/check-env.mjs",

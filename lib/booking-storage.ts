@@ -10,7 +10,6 @@ export type BookingResult = {
   date: string
   timeSlotIndex: number
   total: number
-  pricePerCourt: number
 }
 
 const DRAFT_KEY = 'bookingDraft'

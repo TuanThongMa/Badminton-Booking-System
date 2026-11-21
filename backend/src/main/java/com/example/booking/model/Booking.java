@@ -2,6 +2,9 @@ package com.example.booking.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Formula;
+
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
@@ -46,6 +49,14 @@ public class Booking {
     private BookingStatus status = BookingStatus.CONFIRMED;
 
     private OffsetDateTime createdAt = OffsetDateTime.now();
+
+    // Billed by the trg_auto_court_billing trigger on insert.
+    @Formula("(select bp.amount_charged from booking_payments bp where bp.booking_id = id)")
+    private BigDecimal amountCharged;
+
+    public BigDecimal getAmountCharged() {
+        return amountCharged;
+    }
 
     public Long getId() {
         return id;

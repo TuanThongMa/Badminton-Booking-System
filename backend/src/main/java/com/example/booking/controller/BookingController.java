@@ -86,7 +86,8 @@ public class BookingController {
         Booking b = bookingService.createBooking(req.courtId, d, st, et, req.userName, req.userPhone, req.notes, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(java.util.Map.of(
                 "id", b.getId(),
-                "status", b.getStatus().name()
+                "status", b.getStatus().name(),
+                "amountCharged", b.getAmountCharged()
         ));
     }
 

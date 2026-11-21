@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/navbar'
 import Footer from '@/components/footer'
-import { TIME_SLOTS, getPrice, getDayType, formatCurrency } from '@/lib/booking-pricing'
+import { TIME_SLOTS, getCourtPriceValue, getDayType, formatCurrency } from '@/lib/booking-pricing'
+import { type CourtPrice, fetchCourtPrices } from '@/lib/court-prices'
 import { loadBookingDraft, saveBookingResult, clearBookingDraft } from '@/lib/booking-storage'
 import { backendJson } from '@/lib/backend-api'
 import { removeAuthSession } from '@/lib/auth-api'
@@ -21,6 +22,7 @@ export default function BookingConfirmPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [courtPrices, setCourtPrices] = useState<CourtPrice[] | null>(null)
 
   // Load draft from localStorage
   const draft = typeof window !== 'undefined' ? loadBookingDraft() : null
@@ -49,6 +51,12 @@ export default function BookingConfirmPage() {
     }
   }, [router])
 
+  useEffect(() => {
+    fetchCourtPrices()
+      .then(setCourtPrices)
+      .catch(() => setError('Không thể tải bảng giá sân. Vui lòng thử lại.'))
+  }, [])
+
   if (!draft) {
     return null // will redirect
   }
@@ -60,8 +68,8 @@ export default function BookingConfirmPage() {
 
   const slot = TIME_SLOTS[draft.timeSlotIndex]
   const dayType = getDayType(date)
-  const pricePerCourt = getPrice(slot, dayType)
-  const total = pricePerCourt * draft.courtIds.length
+  const pricePerCourt = courtPrices ? getCourtPriceValue(courtPrices, slot, dayType) : null
+  const total = pricePerCourt === null ? null : pricePerCourt * draft.courtIds.length
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -103,6 +111,7 @@ export default function BookingConfirmPage() {
 
     try {
       const bookingIds: number[] = []
+      let totalCharged = 0
       const storedUser = localStorage.getItem('user')
       let userId: number | null = null
       if (storedUser) {
@@ -115,7 +124,7 @@ export default function BookingConfirmPage() {
 
       // Create one booking per court
       for (const courtId of draft.courtIds) {
-        const result = await backendJson<{ id: number; status: string }>('/bookings', {
+        const result = await backendJson<{ id: number; status: string; amountCharged: number }>('/bookings', {
           method: 'POST',
           body: JSON.stringify({
             courtId,
@@ -129,6 +138,7 @@ export default function BookingConfirmPage() {
           }),
         })
         bookingIds.push(result.id)
+        totalCharged += result.amountCharged
       }
 
       saveBookingResult({
@@ -136,8 +146,7 @@ export default function BookingConfirmPage() {
         courtIds: draft.courtIds,
         date: draft.date,
         timeSlotIndex: draft.timeSlotIndex,
-        total,
-        pricePerCourt,
+        total: totalCharged,
       })
       clearBookingDraft()
       router.push('/booking/success')
@@ -256,7 +265,7 @@ export default function BookingConfirmPage() {
 
                 <button
                   type="submit"
-                  disabled={isLoading || !formData.fullName || !formData.phone}
+                  disabled={isLoading || pricePerCourt === null || !formData.fullName || !formData.phone}
                   className="w-full rounded-lg bg-accent text-white py-3 font-medium transition-colors hover:bg-[rgb(15_110_86)] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? 'Đang đặt sân...' : 'Xác nhận đặt sân'}
@@ -304,11 +313,11 @@ export default function BookingConfirmPage() {
                   <div className="pt-2">
                     <div className="flex justify-between mb-2">
                       <span className="text-muted-foreground">Giá/sân</span>
-                      <span className="font-medium">{formatCurrency(pricePerCourt)}</span>
+                      <span className="font-medium">{pricePerCourt === null ? '...' : formatCurrency(pricePerCourt)}</span>
                     </div>
                     <div className="flex justify-between text-lg font-bold text-accent border-t border-border pt-3">
                       <span>Tổng cộng</span>
-                      <span>{formatCurrency(total)}</span>
+                      <span>{total === null ? '...' : formatCurrency(total)}</span>
                     </div>
                   </div>
                 </div>

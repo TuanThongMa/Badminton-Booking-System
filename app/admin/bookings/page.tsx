@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Navbar from '@/components/navbar'
 import Footer from '@/components/footer'
 import { Search, Loader2, ArrowLeftRight, Check, AlertTriangle, RefreshCw } from 'lucide-react'
-import { TIME_SLOTS, getDayType, getPrice, formatCurrency, COURTS } from '@/lib/booking-pricing'
+import { formatCurrency, COURTS } from '@/lib/booking-pricing'
 import { backendJson } from '@/lib/backend-api'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 
@@ -31,6 +31,7 @@ type Booking = {
   notes: string | null
   status: 'CONFIRMED' | 'CANCELLED' | 'BLOCKED'
   createdAt: string
+  amountCharged: number | null
 }
 
 const STATUS_COLORS = {
@@ -162,14 +163,7 @@ export default function AdminBookingsPage() {
   // Dynamic Revenue calculation
   const totalRevenue = bookings
     .filter(b => b.status === 'CONFIRMED')
-    .reduce((sum, b) => {
-      const startHour = parseInt(b.startTime.split(':')[0], 10)
-      const slot = TIME_SLOTS.find(s => s.start === startHour)
-      const dateObj = new Date(b.bookingDate)
-      const dayType = getDayType(dateObj)
-      const price = slot ? getPrice(slot, dayType) : 0
-      return sum + price
-    }, 0)
+    .reduce((sum, b) => sum + (b.amountCharged ?? 0), 0)
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -318,12 +312,6 @@ export default function AdminBookingsPage() {
                     </tr>
                   ) : (
                     filteredBookings.map((booking) => {
-                      const startHour = parseInt(booking.startTime.split(':')[0], 10)
-                      const slot = TIME_SLOTS.find((s) => s.start === startHour)
-                      const dateObj = new Date(booking.bookingDate)
-                      const dayType = getDayType(dateObj)
-                      const price = slot ? getPrice(slot, dayType) : 0
-
                       const statusColor =
                         STATUS_COLORS[booking.status as keyof typeof STATUS_COLORS] || {
                           bg: 'bg-neutral-50 text-neutral-800 border-neutral-200',
@@ -354,7 +342,7 @@ export default function AdminBookingsPage() {
                             </span>
                           </td>
                           <td className="px-6 py-4 font-bold text-accent">
-                            {formatCurrency(price)}
+                            {formatCurrency(booking.amountCharged ?? 0)}
                           </td>
                           <td className="px-6 py-4">
                             <span

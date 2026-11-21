@@ -6,7 +6,7 @@ import Navbar from '@/components/navbar'
 import Footer from '@/components/footer'
 import { BarChart3, DollarSign, ShoppingCart, TrendingUp, Loader2, ShoppingBag } from 'lucide-react'
 import { backendJson } from '@/lib/backend-api'
-import { TIME_SLOTS, getDayType, getPrice, formatCurrency } from '@/lib/booking-pricing'
+import { formatCurrency } from '@/lib/booking-pricing'
 
 
 type Court = {
@@ -31,6 +31,7 @@ type Booking = {
   notes: string | null
   status: 'CONFIRMED' | 'CANCELLED' | 'BLOCKED'
   createdAt: string
+  amountCharged: number | null
 }
 
 export default function AdminPage() {
@@ -60,14 +61,7 @@ export default function AdminPage() {
         // Calculate revenue
         const revenue = bookingsData
           .filter(b => b.status === 'CONFIRMED')
-          .reduce((sum, b) => {
-            const startHour = parseInt(b.startTime.split(':')[0], 10)
-            const slot = TIME_SLOTS.find(s => s.start === startHour)
-            const dateObj = new Date(b.bookingDate)
-            const dayType = getDayType(dateObj)
-            const price = slot ? getPrice(slot, dayType) : 0
-            return sum + price
-          }, 0)
+          .reduce((sum, b) => sum + (b.amountCharged ?? 0), 0)
 
         const maintenanceIds = new Set(courtsData.filter((court) => court.maintenance).map((court) => court.id))
         const blockedCourtIds = new Set(bookingsData
